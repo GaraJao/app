@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "GaraJão",
+    "slug": "garajao-app-v2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "assets/icon.png",
+    "splash": {
+      "image": "assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#d58453"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "assets/adaptive-icon.png",
+        "backgroundColor": "#d58453"
+      },
+      "package": "com.bonadio.garajaoappv2"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f30c38d9-b972-4bb7-af99-517fe6329c8c"
+      }
+    }
+  }
+}
