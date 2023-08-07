@@ -1,130 +1,228 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
-import { Alert, View, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import axios from "axios";
+import React, { useContext, useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Alert,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native'
+import { MaterialIcons } from '@expo/vector-icons'
+import uuid from 'react-native-uuid'
+import { useTheme } from 'styled-components/native'
 
-import { CardDelete, GateContainer, AddressContainer, Address, DateCard, City, Gate, CardBody, Body, Card, ContainerImage, Header, Logo, Title, Subtitle, Container } from './styles'
+import {
+  Text,
+  CardDelete,
+  GateContainer,
+  AddressContainer,
+  Address,
+  DateCard,
+  City,
+  GateText,
+  CardBody,
+  Body,
+  Card,
+  ContainerImage,
+  Header,
+  Logo,
+  Title,
+  Subtitle,
+  Container,
+} from './styles'
+import { AuthContext } from '../../hooks/auth'
+import { api } from '../../services/api'
+import { Solicitation } from '../../models/SolicitationModel'
+import { Message } from '../../models/MessageModel'
+import { Gate } from '../../models/GateModel'
+import { SolicitationCardShimmer } from '../../components/SolicitationCardShimmer/SolicitationCardShimmer'
 
-import { AuthContext } from '../../contexts/auth';
+export function Solicitations({ route }: any) {
+  const { login } = useContext(AuthContext)
+  const { gateData } = route.params
 
-export function Solicitations({ route }: { route: any }) {
-    const { gate } = route.params;
+  const { colors } = useTheme()
 
-    const { user, token } = useContext(AuthContext);
+  const queryClient = useQueryClient()
+  const gateQuery = queryClient.getQueryData(['gate-list']) as Gate[]
 
-    async function switchGate() {
-        await axios.post(
-            "https://garajao-dev.vercel.app/api/solicitations/" + gate.id + "/gate",
-            { message: 3, user_id: user.user.id },
-            { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.token } },
-        ).catch((error) => {
-            if (error.response)
-                Alert.alert("Attention", error.response.data.message);
-        });
-    }
+  const gate = gateQuery.filter((gate: Gate) => {
+    if (gate.id === gateData.id) return gate
+    else return null
+  })[0] as Gate
 
-    async function deleteSolicitation(solicitation: any) {
-        await axios.delete(
-            "https://garajao-dev.vercel.app/api/solicitations/" + solicitation,
-            { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.token } },
-        ).catch((error) => {
-            if (error.response)
-                Alert.alert("Attention", error.response.data.message);
-        });
-    }
+  const [selectedSolicitation, setSelectedSolicitation] =
+    useState<Solicitation | null>(null)
 
-    let { data } = useQuery("solicitations", async () => {
-        const res = await fetch("https://garajao-dev.vercel.app/api/gates/" + gate.id + "/solicitations?limit=10&offset=0", {
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + token.token },
-        });
-        return res.json();
-    }, { refetchInterval: 2000 });
+  const {
+    data: solicitationData,
+    isError,
+    isLoading,
+    refetch,
+  } = useQuery(['list-solicitation'], () =>
+    api.getSolicitations(gate, login.token),
+  )
 
-    if (gate.open) {
-        gate.fera = "CLOSE";
-        gate.color = "#C84D4D";
-    } else {
-        gate.fera = "OPEN";
-        gate.color = "#5CBE53";
-    }
+  const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
+    useMutation(() => api.createSolicitation(gate, login.user, login.token), {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['gate-list'])
+        queryClient.invalidateQueries(['list-solicitation'])
 
-    if (data)
-        data.map((solicitation: any) => {
-            // solicitation.fera = "teste";
-            if (solicitation.gate.open) {
-                gate.fera = "CLOSE";
-                gate.color = "#C84D4D";
-            } else {
-                gate.fera = "OPEN";
-                gate.color = "#5CBE53";
-            }
-            solicitation.date = new Date(solicitation.updated_at).toLocaleString("pt-br");
-            solicitation.opacity = solicitation.valid ? 1 : 0.4;
+        const previousSolicitations = queryClient.getQueryData([
+          'list-solicitation',
+        ]) as Solicitation[]
 
-            // solicitation.message = solicitation.valid ? solicitation.message : "Carregando...";
+        const newSolicitation = {
+          id: uuid.v4(),
+          message: { description: 'Loading...' } as Message,
+          user: { name: login.user.name },
+          updated_at: new Date(),
+          valid: false,
+        } as Solicitation
 
-            if (solicitation.user)
-                solicitation.placeholder = "User: " + solicitation.user.name;
-            else
-                solicitation.placeholder = "Code: " + solicitation.code;
+        previousSolicitations.unshift(newSolicitation)
+      },
+      onError: (error: any) =>
+        Alert.alert('Attention', error.response.data.message),
+    })
 
-            solicitation.icon = !solicitation.code ? "smartphone" : "settings-remote";
+  const { isLoading: deleteSolicitationIsLoading, mutate: deleteSolicitation } =
+    useMutation(
+      () => api.deleteSolicitation(selectedSolicitation, login.token),
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['list-solicitation'])
 
-            if (solicitation.gate.id == "f96652a1-b288-47f2-ae7d-f67b96995f86")
-                solicitation.image = require("../../assets/gates/f96652a1-b288-47f2-ae7d-f67b96995f86.jpg");
-            else if (solicitation.gate.id == "ace9f0ff-1b73-41a5-952e-3b5a3154b611")
-                solicitation.image = require("../../assets/gates/ace9f0ff-1b73-41a5-952e-3b5a3154b611.jpg");
-            else
-                solicitation.image = require("../../assets/logo.png");
-        });
-    else {
-        data = [];
-    }
+          const previousSolicitations = queryClient.getQueryData([
+            'list-solicitation',
+          ]) as Solicitation[]
 
-    return (
-        <Container>
-            <Header>
-                <GateContainer>
-                    <Logo source={gate.image} />
-                    <View style={{ "width": "80%" }}>
-                        <Title>{gate.name}</Title>
-                        <TouchableOpacity onPress={() => switchGate()}>
-                            <Subtitle style={{ "backgroundColor": gate.color }}>{gate.fera}</Subtitle>
-                        </TouchableOpacity>
-                    </View>
-                </GateContainer>
-                <AddressContainer>
-                    <Address>{gate.address} • {gate.number} • {gate.complement}</Address>
-                    <Address>{gate.city} • {gate.uf}</Address>
-                </AddressContainer>
-            </Header>
-            <Body>
-                {data.map((solicitation: any) => (
-                    <Card key={solicitation.id}>
-                        <ContainerImage style={{ "opacity": solicitation.opacity }}>
-                            <MaterialIcons name={solicitation.icon} size={32} color="#D58453" />
-                        </ContainerImage>
-                        <CardBody style={{ "opacity": solicitation.opacity }}>
-                            <Gate numberOfLines={1}>{solicitation.message.description}</Gate>
-                            <DateCard>{solicitation.date}</DateCard>
-                            <City numberOfLines={1}>{solicitation.placeholder}</City>
-                        </CardBody>
-                        {(() => {
-                            if (!solicitation.valid) {
-                                return (
-                                    <CardDelete>
-                                        <MaterialIcons name="clear" size={32} color="#db9b72" onPress={()=>deleteSolicitation(solicitation.id)} />
-                                    </CardDelete>
-                                )
-                            }
+          previousSolicitations.filter((solicitation, index) => {
+            if (solicitation.id === selectedSolicitation?.id)
+              previousSolicitations.splice(index, 1)
+            return 0
+          })
 
-                            return;
-                        })()}
-                    </Card>
-                ))}
-            </Body>
-        </Container>
-    );
+          setSelectedSolicitation(null)
+        },
+        onError: (error: any) =>
+          Alert.alert('Attention', error.response.data.message),
+      },
+    )
+
+  useEffect(() => {
+    if (selectedSolicitation) deleteSolicitation()
+  }, [deleteSolicitation, selectedSolicitation])
+
+  const [refreshing, setRefreshing] = React.useState(false)
+
+  const handleRefresh = React.useCallback(async () => {
+    setRefreshing(true)
+    await refetch()
+    setRefreshing(false)
+  }, [refetch])
+
+  return (
+    <Container>
+      <Header>
+        <GateContainer>
+          <Logo
+            source={{
+              uri: 'https://s42814.pcdn.co/wp-content/uploads/2020/09/iStock_185930591-scaled.jpg.optimal.jpg',
+            }}
+          />
+          <View style={{ width: '80%' }}>
+            <Title>{gate.name}</Title>
+            <TouchableOpacity onPress={() => createSolicitation()}>
+              <Subtitle
+                style={{
+                  backgroundColor: gate.open ? colors.close : colors.open,
+                }}
+              >
+                {createSolicitationIsLoading ? (
+                  <ActivityIndicator color={colors.fontColorButton} />
+                ) : gate.open ? (
+                  <Text>CLOSE</Text>
+                ) : (
+                  <Text>OPEN</Text>
+                )}
+              </Subtitle>
+            </TouchableOpacity>
+          </View>
+        </GateContainer>
+        <AddressContainer>
+          <Address>
+            {gate.address} • {gate.number} • {gate.complement}
+          </Address>
+          <Address>
+            {gate.city} • {gate.uf}
+          </Address>
+        </AddressContainer>
+      </Header>
+      <Body
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        <TouchableOpacity
+          onPress={() => {
+            queryClient.invalidateQueries(['gate-list'])
+            refetch()
+          }}
+        >
+          {/* <Title>reload</Title> */}
+        </TouchableOpacity>
+        {isLoading &&
+          [...Array(6)].map((e, i) => (
+            <SolicitationCardShimmer key={i}></SolicitationCardShimmer>
+          ))}
+        {isError && <Title>Erro</Title>}
+        {solicitationData?.map((solicitation: Solicitation) => (
+          <Card key={solicitation.id}>
+            <ContainerImage style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
+              <MaterialIcons
+                name={solicitation.code ? 'settings-remote' : 'smartphone'}
+                size={32}
+                color={colors.primary}
+              />
+            </ContainerImage>
+            <CardBody style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
+              <GateText numberOfLines={1}>
+                {solicitation.message.description}
+              </GateText>
+              <DateCard>
+                {new Date(solicitation.updated_at).toLocaleString('pt-br')}
+              </DateCard>
+              <City numberOfLines={1}>
+                {solicitation.user
+                  ? `User: ${solicitation.user.name}`
+                  : `Code: ${solicitation.code}`}
+              </City>
+            </CardBody>
+            {!solicitation.valid ? (
+              <CardDelete>
+                {deleteSolicitationIsLoading ? (
+                  <ActivityIndicator size="large" color={colors.primary} />
+                ) : (
+                  <MaterialIcons
+                    name="clear"
+                    size={32}
+                    color={colors.primary}
+                    onPress={() => {
+                      setSelectedSolicitation(solicitation)
+                    }}
+                  />
+                )}
+              </CardDelete>
+            ) : null}
+          </Card>
+        ))}
+      </Body>
+    </Container>
+  )
 }
