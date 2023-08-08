@@ -1,3 +1,6 @@
+import { Solicitation } from './SolicitationModel'
+import { User } from './UserModel'
+
 export interface Gate {
   id: string
   name: string
@@ -9,6 +12,11 @@ export interface Gate {
   number: number
   city: string
   uf: string
+  image: string
+
+  solicitations: Solicitation
+  users: User[]
+
   created_at: Date
   updated_at: Date
 }

@@ -5,6 +5,7 @@ export const light: DefaultTheme = {
 
   colors: {
     primary: '#D58453',
+    statusBar: 'dark',
 
     secondary900: '#615148',
     secondary700: '#a86d4a',

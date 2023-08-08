@@ -7,9 +7,11 @@ export interface Solicitation {
   status: boolean
   code: string
   valid: boolean
-  created_at: Date
-  updated_at: Date
+
   gate: Gate
   user: User
   message: Message
+
+  created_at: Date
+  updated_at: Date
 }

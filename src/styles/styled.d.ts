@@ -6,6 +6,7 @@ declare module 'styled-components' {
 
     colors: {
       primary: string
+      statusBar: string
 
       secondary900: string
       secondary700: string

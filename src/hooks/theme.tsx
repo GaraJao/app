@@ -20,7 +20,7 @@ export const ThemeContext = createContext({
   toggleTheme: () => {},
 })
 
-export const ThemeProvider: React.FC = ({ children }) => {
+export const ThemeProvider: React.FC = ({ children }: any) => {
   const [theme, setTheme] = useState(ThemeType.light)
 
   // useEffect(() => {

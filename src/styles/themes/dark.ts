@@ -5,15 +5,16 @@ export const dark: DefaultTheme = {
 
   colors: {
     primary: '#D58453',
+    statusBar: 'light',
 
     secondary900: '#fff',
     secondary700: '#D58453',
 
-    text: '#fff',
+    text: '#E8E8E8',
     fontColorButton: '#ffffff',
     background: '#282828',
     background300: '#3f3f3f',
-    background400: '#8b8b8b',
+    background400: '#CFCFCF',
 
     shimmer300: '#686868',
     shimmer: '#808080',

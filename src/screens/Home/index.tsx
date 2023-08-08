@@ -1,9 +1,10 @@
-import React, { useContext, useState } from 'react'
+import { useCallback, useContext, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshControl, View } from 'react-native'
+import { Alert, BackHandler, RefreshControl, View } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { useTheme } from 'styled-components/native'
+import moment from 'moment'
 
 import {
   DateCard,
@@ -34,7 +35,7 @@ export function Home() {
   const { login } = useContext(AuthContext)
   const navigation = useNavigation()
 
-  const { data, isError, isLoading, refetch } = useQuery(['gate-list'], () =>
+  const { data, isError, isLoading } = useQuery(['gate-list'], () =>
     api.getGates(login.user, login.token),
   )
 
@@ -45,18 +46,34 @@ export function Home() {
   const isDarkMode = theme === ThemeType.dark
   const { colors } = useTheme()
 
-  const handleRefresh = React.useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await refetch()
+    await queryClient.invalidateQueries(['gate-list'])
     setRefreshing(false)
-  }, [refetch])
+  }, [queryClient])
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       queryClient.removeQueries(['list-solicitation'])
-      refetch()
-    }, [queryClient, refetch]),
+      queryClient.invalidateQueries(['gate-list'])
+    }, [queryClient]),
   )
+
+  const backAction = () => {
+    if (navigation.isFocused()) {
+      Alert.alert('Attention', 'Do you really want to exit the App?', [
+        {
+          text: 'Cancel',
+          onPress: () => null,
+          style: 'cancel',
+        },
+        { text: 'YES', onPress: () => BackHandler.exitApp() },
+      ])
+      return true
+    }
+  }
+
+  BackHandler.addEventListener('hardwareBackPress', backAction)
 
   return (
     <Container>
@@ -98,15 +115,15 @@ export function Home() {
         {isError && <Subtitle>Erro</Subtitle>}
         {data?.map((gate: Gate) => (
           <Card
+            key={gate.id}
             onPress={() =>
               navigation.navigate('Solicitations', { gateData: gate })
             }
-            key={gate.id}
           >
             <ContainerImage>
               <CardImage
                 source={{
-                  uri: 'https://s42814.pcdn.co/wp-content/uploads/2020/09/iStock_185930591-scaled.jpg.optimal.jpg',
+                  uri: gate.image,
                 }}
               ></CardImage>
             </ContainerImage>
@@ -123,7 +140,9 @@ export function Home() {
                 />
                 <State>{gate.open ? 'OPENED' : 'CLOSED'}</State>
                 <DateCard>
-                  {new Date(gate.updated_at).toLocaleString('pt-br')}
+                  {gate.solicitations
+                    ? moment(gate.solicitations.updated_at).fromNow()
+                    : ''}
                 </DateCard>
               </ContainerState>
             </CardBody>

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
@@ -6,10 +6,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  BackHandler,
 } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
 import uuid from 'react-native-uuid'
 import { useTheme } from 'styled-components/native'
+import { useNavigation } from '@react-navigation/native'
+import moment from 'moment'
+import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated'
 
 import {
   Text,
@@ -36,10 +40,12 @@ import { Solicitation } from '../../models/SolicitationModel'
 import { Message } from '../../models/MessageModel'
 import { Gate } from '../../models/GateModel'
 import { SolicitationCardShimmer } from '../../components/SolicitationCardShimmer/SolicitationCardShimmer'
+import { User } from '../../models/UserModel'
 
 export function Solicitations({ route }: any) {
   const { login } = useContext(AuthContext)
   const { gateData } = route.params
+  const navigation = useNavigation()
 
   const { colors } = useTheme()
 
@@ -58,7 +64,6 @@ export function Solicitations({ route }: any) {
     data: solicitationData,
     isError,
     isLoading,
-    refetch,
   } = useQuery(['list-solicitation'], () =>
     api.getSolicitations(gate, login.token),
   )
@@ -115,13 +120,21 @@ export function Solicitations({ route }: any) {
     if (selectedSolicitation) deleteSolicitation()
   }, [deleteSolicitation, selectedSolicitation])
 
-  const [refreshing, setRefreshing] = React.useState(false)
-
-  const handleRefresh = React.useCallback(async () => {
+  BackHandler.addEventListener('hardwareBackPress', () => {
     setRefreshing(true)
-    await refetch()
+    navigation.goBack()
+
+    return true
+  })
+
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await queryClient.invalidateQueries(['gate-list'])
+    await queryClient.invalidateQueries(['list-solicitation'])
     setRefreshing(false)
-  }, [refetch])
+  }, [queryClient])
 
   return (
     <Container>
@@ -129,7 +142,7 @@ export function Solicitations({ route }: any) {
         <GateContainer>
           <Logo
             source={{
-              uri: 'https://s42814.pcdn.co/wp-content/uploads/2020/09/iStock_185930591-scaled.jpg.optimal.jpg',
+              uri: gate.image,
             }}
           />
           <View style={{ width: '80%' }}>
@@ -158,6 +171,12 @@ export function Solicitations({ route }: any) {
           <Address>
             {gate.city} • {gate.uf}
           </Address>
+          {/* <Address></Address>
+          {gate.users?.map((user: User) => (
+            <Address key={user.id}>
+              {user.name} • {user.role.name}
+            </Address>
+          ))} */}
         </AddressContainer>
       </Header>
       <Body
@@ -169,58 +188,55 @@ export function Solicitations({ route }: any) {
           />
         }
       >
-        <TouchableOpacity
-          onPress={() => {
-            queryClient.invalidateQueries(['gate-list'])
-            refetch()
-          }}
-        >
-          {/* <Title>reload</Title> */}
-        </TouchableOpacity>
         {isLoading &&
           [...Array(6)].map((e, i) => (
             <SolicitationCardShimmer key={i}></SolicitationCardShimmer>
           ))}
         {isError && <Title>Erro</Title>}
         {solicitationData?.map((solicitation: Solicitation) => (
-          <Card key={solicitation.id}>
-            <ContainerImage style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
-              <MaterialIcons
-                name={solicitation.code ? 'settings-remote' : 'smartphone'}
-                size={32}
-                color={colors.primary}
-              />
-            </ContainerImage>
-            <CardBody style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
-              <GateText numberOfLines={1}>
-                {solicitation.message.description}
-              </GateText>
-              <DateCard>
-                {new Date(solicitation.updated_at).toLocaleString('pt-br')}
-              </DateCard>
-              <City numberOfLines={1}>
-                {solicitation.user
-                  ? `User: ${solicitation.user.name}`
-                  : `Code: ${solicitation.code}`}
-              </City>
-            </CardBody>
-            {!solicitation.valid ? (
-              <CardDelete>
-                {deleteSolicitationIsLoading ? (
-                  <ActivityIndicator size="large" color={colors.primary} />
-                ) : (
-                  <MaterialIcons
-                    name="clear"
-                    size={32}
-                    color={colors.primary}
-                    onPress={() => {
-                      setSelectedSolicitation(solicitation)
-                    }}
-                  />
-                )}
-              </CardDelete>
-            ) : null}
-          </Card>
+          <Animated.View
+            entering={FadeIn}
+            exiting={FadeOut}
+            layout={Layout.delay(100)}
+            key={solicitation.id}
+          >
+            <Card>
+              <ContainerImage style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
+                <MaterialIcons
+                  name={solicitation.code ? 'settings-remote' : 'smartphone'}
+                  size={32}
+                  color={colors.primary}
+                />
+              </ContainerImage>
+              <CardBody style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
+                <GateText numberOfLines={1}>
+                  {solicitation.message.description}
+                </GateText>
+                <DateCard>{moment(solicitation.updated_at).fromNow()}</DateCard>
+                <City numberOfLines={1}>
+                  {solicitation.user
+                    ? `User: ${solicitation.user.name}`
+                    : `Code: ${solicitation.code}`}
+                </City>
+              </CardBody>
+              {!solicitation.valid ? (
+                <CardDelete>
+                  {deleteSolicitationIsLoading ? (
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  ) : (
+                    <MaterialIcons
+                      name="clear"
+                      size={32}
+                      color={colors.primary}
+                      onPress={() => {
+                        setSelectedSolicitation(solicitation)
+                      }}
+                    />
+                  )}
+                </CardDelete>
+              ) : null}
+            </Card>
+          </Animated.View>
         ))}
       </Body>
     </Container>
