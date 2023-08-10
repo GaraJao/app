@@ -40,7 +40,6 @@ import { Solicitation } from '../../models/SolicitationModel'
 import { Message } from '../../models/MessageModel'
 import { Gate } from '../../models/GateModel'
 import { SolicitationCardShimmer } from '../../components/SolicitationCardShimmer/SolicitationCardShimmer'
-import { User } from '../../models/UserModel'
 
 export function Solicitations({ route }: any) {
   const { login } = useContext(AuthContext)
