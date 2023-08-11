@@ -1,15 +1,12 @@
 import axios from 'axios'
-import { BASE_URL } from '@env'
 
 import { Gate } from '../models/GateModel'
 import { User } from '../models/UserModel'
 import { Solicitation } from '../models/SolicitationModel'
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: 'https://garajao-dev.vercel.app/api',
 })
-
-console.log(BASE_URL)
 
 async function getGates(user: User, token: string): Promise<Gate[]> {
   const response = await axiosInstance.get<Gate[]>(`/gates/${user.id}/user`, {

@@ -31,8 +31,10 @@ import {
   Header,
   Logo,
   Title,
-  Subtitle,
   Container,
+  GateState,
+  GateUsers,
+  CardImage,
 } from './styles'
 import { AuthContext } from '../../hooks/auth'
 import { api } from '../../services/api'
@@ -43,13 +45,14 @@ import { SolicitationCardShimmer } from '../../components/SolicitationCardShimme
 
 export function Solicitations({ route }: any) {
   const { login } = useContext(AuthContext)
-  const { gateData } = route.params
+  const { gateData, date } = route.params
+  const [menu, setMenu] = useState(false)
   const navigation = useNavigation()
 
   const { colors } = useTheme()
 
   const queryClient = useQueryClient()
-  const gateQuery = queryClient.getQueryData(['gate-list']) as Gate[]
+  const gateQuery = queryClient.getQueryData(['list-gate']) as Gate[]
 
   const gate = gateQuery.filter((gate: Gate) => {
     if (gate.id === gateData.id) return gate
@@ -70,7 +73,7 @@ export function Solicitations({ route }: any) {
   const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
     useMutation(() => api.createSolicitation(gate, login.user, login.token), {
       onSuccess: () => {
-        queryClient.invalidateQueries(['gate-list'])
+        queryClient.invalidateQueries(['list-gate'])
         queryClient.invalidateQueries(['list-solicitation'])
 
         const previousSolicitations = queryClient.getQueryData([
@@ -130,7 +133,7 @@ export function Solicitations({ route }: any) {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await queryClient.invalidateQueries(['gate-list'])
+    await queryClient.invalidateQueries(['list-gate'])
     await queryClient.invalidateQueries(['list-solicitation'])
     setRefreshing(false)
   }, [queryClient])
@@ -146,21 +149,44 @@ export function Solicitations({ route }: any) {
           />
           <View style={{ width: '80%' }}>
             <Title>{gate.name}</Title>
-            <TouchableOpacity onPress={() => createSolicitation()}>
-              <Subtitle
-                style={{
-                  backgroundColor: gate.open ? colors.close : colors.open,
-                }}
-              >
-                {createSolicitationIsLoading ? (
-                  <ActivityIndicator color={colors.fontColorButton} />
-                ) : gate.open ? (
-                  <Text>CLOSE</Text>
-                ) : (
-                  <Text>OPEN</Text>
-                )}
-              </Subtitle>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', marginTop: 3 }}>
+              <TouchableOpacity onPress={() => setMenu(!menu)}>
+                <GateUsers
+                  style={{
+                    marginRight: 5,
+                    backgroundColor: colors.primary,
+                    width: 'auto',
+                    padding: 20,
+                  }}
+                >
+                  <Text>{menu ? 'HISTORY' : 'USERS'}</Text>
+                </GateUsers>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => createSolicitation()}>
+                <GateState
+                  style={{
+                    backgroundColor:
+                      moment(date).diff(gate.consulted_at, 'seconds') < 30
+                        ? gate.open
+                          ? colors.close
+                          : colors.open
+                        : colors.offline200,
+                  }}
+                >
+                  {createSolicitationIsLoading ? (
+                    <ActivityIndicator color={colors.fontColorButton} />
+                  ) : moment(date).diff(gate.consulted_at, 'seconds') < 30 ? (
+                    gate.open ? (
+                      <Text>CLOSE</Text>
+                    ) : (
+                      <Text>OPEN</Text>
+                    )
+                  ) : (
+                    <Text>OFF</Text>
+                  )}
+                </GateState>
+              </TouchableOpacity>
+            </View>
           </View>
         </GateContainer>
         <AddressContainer>
@@ -170,15 +196,10 @@ export function Solicitations({ route }: any) {
           <Address>
             {gate.city} • {gate.uf}
           </Address>
-          {/* <Address></Address>
-          {gate.users?.map((user: User) => (
-            <Address key={user.id}>
-              {user.name} • {user.role.name}
-            </Address>
-          ))} */}
         </AddressContainer>
       </Header>
       <Body
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -187,19 +208,42 @@ export function Solicitations({ route }: any) {
           />
         }
       >
-        {isLoading &&
+        {menu &&
+          gate.users?.map((user: User) => (
+            <Card key={user.id} style={{ height: 65 }}>
+              <ContainerImage>
+                <CardImage
+                  source={{
+                    uri: user.image,
+                  }}
+                ></CardImage>
+              </ContainerImage>
+              <CardBody>
+                <GateText numberOfLines={1}>
+                  {user.name} ({user.role.name})
+                </GateText>
+                <DateCard style={{ marginTop: 4 }}>
+                  Created at:{' '}
+                  {new Date(user.created_at).toLocaleString('pt-br')}
+                </DateCard>
+              </CardBody>
+            </Card>
+          ))}
+        {!menu &&
+          isLoading &&
           [...Array(6)].map((e, i) => (
             <SolicitationCardShimmer key={i}></SolicitationCardShimmer>
           ))}
-        {isError && <Title>Erro</Title>}
-        {solicitationData?.map((solicitation: Solicitation) => (
-          <Animated.View
-            entering={FadeIn}
-            exiting={FadeOut}
-            layout={Layout.delay(100)}
-            key={solicitation.id}
-          >
-            <Card>
+        {!menu && isError && <Title>Erro</Title>}
+        {!menu &&
+          solicitationData?.map((solicitation: Solicitation) => (
+            // <Animated.View
+            //   entering={FadeIn}
+            //   exiting={FadeOut}
+            //   layout={Layout.delay(100)}
+            //   key={solicitation.id}
+            // >
+            <Card key={solicitation.id}>
               <ContainerImage style={{ opacity: solicitation.valid ? 1 : 0.4 }}>
                 <MaterialIcons
                   name={solicitation.code ? 'settings-remote' : 'smartphone'}
@@ -235,8 +279,8 @@ export function Solicitations({ route }: any) {
                 </CardDelete>
               ) : null}
             </Card>
-          </Animated.View>
-        ))}
+            // </Animated.View>
+          ))}
       </Body>
     </Container>
   )

@@ -1,6 +1,12 @@
 import { useCallback, useContext, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, BackHandler, RefreshControl, View } from 'react-native'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  RefreshControl,
+  View,
+} from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { useTheme } from 'styled-components/native'
@@ -35,9 +41,30 @@ export function Home() {
   const { login } = useContext(AuthContext)
   const navigation = useNavigation()
 
-  const { data, isError, isLoading } = useQuery(['gate-list'], () =>
-    api.getGates(login.user, login.token),
+  const [date, setDate] = useState(0)
+
+  const { data, isError, isLoading } = useQuery(
+    ['list-gate'],
+    () => api.getGates(login.user, login.token),
+    {
+      onSuccess: () => {
+        setDate(Date.now())
+      },
+    },
   )
+
+  const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
+    useMutation(
+      (gate: Gate) => api.createSolicitation(gate, login.user, login.token),
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['list-gate'])
+          queryClient.invalidateQueries(['list-solicitation'])
+        },
+        onError: (error: any) =>
+          Alert.alert('Attention', error.response.data.message),
+      },
+    )
 
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
@@ -48,14 +75,14 @@ export function Home() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await queryClient.invalidateQueries(['gate-list'])
+    await queryClient.invalidateQueries(['list-gate'])
     setRefreshing(false)
   }, [queryClient])
 
   useFocusEffect(
     useCallback(() => {
       queryClient.removeQueries(['list-solicitation'])
-      queryClient.invalidateQueries(['gate-list'])
+      queryClient.invalidateQueries(['list-gate'])
     }, [queryClient]),
   )
 
@@ -92,7 +119,6 @@ export function Home() {
         <ColorThemeContainer>
           <MaterialIcons
             onPress={() => toggleTheme()}
-            // nightlight-round
             name={isDarkMode ? 'nightlight-round' : 'wb-sunny'}
             size={37}
             color={colors.primary}
@@ -100,6 +126,7 @@ export function Home() {
         </ColorThemeContainer>
       </Header>
       <Body
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -117,7 +144,10 @@ export function Home() {
           <Card
             key={gate.id}
             onPress={() =>
-              navigation.navigate('Solicitations', { gateData: gate })
+              navigation.navigate('Solicitations', {
+                gateData: gate,
+                date,
+              })
             }
           >
             <ContainerImage>
@@ -135,17 +165,46 @@ export function Home() {
               <ContainerState>
                 <StateCircle
                   style={{
-                    backgroundColor: gate.open ? colors.open : colors.close,
+                    backgroundColor:
+                      moment(date).diff(gate.consulted_at, 'seconds') < 30
+                        ? gate.open
+                          ? colors.open
+                          : colors.close
+                        : colors.offline,
                   }}
                 />
-                <State>{gate.open ? 'OPENED' : 'CLOSED'}</State>
+                <State>
+                  {moment(date).diff(gate.consulted_at, 'seconds') < 30
+                    ? gate.open
+                      ? 'OPEN'
+                      : 'CLOSED'
+                    : 'OFFLINE'}
+                </State>
                 <DateCard>
-                  {gate.solicitations
-                    ? moment(gate.solicitations.updated_at).fromNow()
-                    : ''}
+                  {gate.solicitations &&
+                    moment(gate.solicitations.updated_at).fromNow()}
                 </DateCard>
               </ContainerState>
             </CardBody>
+            {moment(date).diff(gate.consulted_at, 'seconds') < 30 ? (
+              createSolicitationIsLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary}
+                  style={{ position: 'absolute', right: 15 }}
+                />
+              ) : (
+                <MaterialIcons
+                  style={{ position: 'absolute', right: 15 }}
+                  onPress={() => createSolicitation(gate)}
+                  name={'play-arrow'}
+                  size={37}
+                  color={colors.primary}
+                />
+              )
+            ) : (
+              ''
+            )}
           </Card>
         ))}
       </Body>

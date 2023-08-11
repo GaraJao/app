@@ -21,5 +21,7 @@ export const light: DefaultTheme = {
 
     open: '#5CBE53',
     close: '#C84D4D',
+    offline: '#ccc',
+    offline200: '#444',
   },
 }

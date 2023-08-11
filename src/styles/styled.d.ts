@@ -23,6 +23,8 @@ declare module 'styled-components' {
 
       open: string
       close: string
+      offline: string
+      offline200: string
     }
   }
 }

@@ -17,6 +17,7 @@ export interface Gate {
   solicitations: Solicitation
   users: User[]
 
+  consulted_at: Date
   created_at: Date
   updated_at: Date
 }

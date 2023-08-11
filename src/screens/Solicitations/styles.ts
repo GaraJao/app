@@ -34,11 +34,21 @@ export const Title = styled.Text`
   color: ${(props) => props.theme.colors.secondary900};
 `
 
-export const Subtitle = styled.View`
+export const GateState = styled.View`
   justify-content: center;
   align-items: center;
   height: 25px;
   padding: 3px 0;
+  width: 60px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+`
+
+export const GateUsers = styled.View`
+  justify-content: center;
+  align-items: center;
+  height: 25px;
+  padding: 3px 10px;
   width: 60px;
   border-radius: 5px;
   margin-bottom: 10px;
@@ -75,6 +85,13 @@ export const ContainerImage = styled.View`
   height: 100%;
   justify-content: center;
   align-items: center;
+`
+
+export const CardImage = styled.Image`
+  width: 50px;
+  height: 50px;
+  border-radius: 40px;
+  background-color: ${(props) => props.theme.colors.shimmer};
 `
 
 export const CardBody = styled.View`

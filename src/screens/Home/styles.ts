@@ -57,6 +57,7 @@ export const Card = styled.TouchableOpacity`
   overflow: hidden;
   flex-direction: row;
   margin-bottom: 12px;
+  align-items: center;
 `
 
 export const ContainerImage = styled.View`
@@ -98,8 +99,8 @@ export const ContainerState = styled.View`
 `
 
 export const StateCircle = styled.View`
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 10px;
   margin-right: 5px;
 `
