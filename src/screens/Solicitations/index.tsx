@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
@@ -36,15 +36,16 @@ import {
   GateUsers,
   CardImage,
 } from './styles'
-import { AuthContext } from '../../hooks/auth'
+import { useAuth } from '../../hooks/auth'
 import { api } from '../../services/api'
 import { Solicitation } from '../../models/SolicitationModel'
 import { Message } from '../../models/MessageModel'
 import { Gate } from '../../models/GateModel'
 import { SolicitationCardShimmer } from '../../components/SolicitationCardShimmer/SolicitationCardShimmer'
+import { User } from '../../models/UserModel'
 
 export function Solicitations({ route }: any) {
-  const { login } = useContext(AuthContext)
+  const { authData } = useAuth()
   const { gateData, date } = route.params
   const [menu, setMenu] = useState(false)
   const navigation = useNavigation()
@@ -67,36 +68,39 @@ export function Solicitations({ route }: any) {
     isError,
     isLoading,
   } = useQuery(['list-solicitation'], () =>
-    api.getSolicitations(gate, login.token),
+    api.getSolicitations(gate, authData.token),
   )
 
   const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
-    useMutation(() => api.createSolicitation(gate, login.user, login.token), {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['list-gate'])
-        queryClient.invalidateQueries(['list-solicitation'])
+    useMutation(
+      () => api.createSolicitation(gate, authData.user, authData.token),
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['list-gate'])
+          queryClient.invalidateQueries(['list-solicitation'])
 
-        const previousSolicitations = queryClient.getQueryData([
-          'list-solicitation',
-        ]) as Solicitation[]
+          const previousSolicitations = queryClient.getQueryData([
+            'list-solicitation',
+          ]) as Solicitation[]
 
-        const newSolicitation = {
-          id: uuid.v4(),
-          message: { description: 'Loading...' } as Message,
-          user: { name: login.user.name },
-          updated_at: new Date(),
-          valid: false,
-        } as Solicitation
+          const newSolicitation = {
+            id: uuid.v4(),
+            message: { description: 'Loading...' } as Message,
+            user: { name: authData.user.name },
+            updated_at: new Date(),
+            valid: false,
+          } as Solicitation
 
-        previousSolicitations.unshift(newSolicitation)
+          previousSolicitations.unshift(newSolicitation)
+        },
+        onError: (error: any) =>
+          Alert.alert('Attention', error.response.data.message),
       },
-      onError: (error: any) =>
-        Alert.alert('Attention', error.response.data.message),
-    })
+    )
 
   const { isLoading: deleteSolicitationIsLoading, mutate: deleteSolicitation } =
     useMutation(
-      () => api.deleteSolicitation(selectedSolicitation, login.token),
+      () => api.deleteSolicitation(selectedSolicitation, authData.token),
       {
         onSuccess: () => {
           queryClient.invalidateQueries(['list-solicitation'])
@@ -123,6 +127,10 @@ export function Solicitations({ route }: any) {
   }, [deleteSolicitation, selectedSolicitation])
 
   BackHandler.addEventListener('hardwareBackPress', () => {
+    if (menu) {
+      setMenu(!menu)
+      return true
+    }
     setRefreshing(true)
     navigation.goBack()
 

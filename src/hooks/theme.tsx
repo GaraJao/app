@@ -17,6 +17,7 @@ const themes = {
 
 export const ThemeContext = createContext({
   theme: ThemeType.light,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   toggleTheme: () => {},
 })
 

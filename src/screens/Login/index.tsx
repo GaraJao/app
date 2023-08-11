@@ -1,5 +1,4 @@
-import { useState, useContext } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import {
   Logo,
@@ -12,16 +11,14 @@ import {
   Button,
   Loading,
 } from './styles'
-import { AuthContext } from '../../hooks/auth'
+import { useAuth } from '../../hooks/auth'
 
 export function Login() {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const queryClient = useQueryClient()
-
-  const { signIn } = useContext(AuthContext)
+  const { signIn } = useAuth()
 
   const onChangeLoginHandler = (login: string) => {
     setLogin(login)
@@ -34,7 +31,6 @@ export function Login() {
   async function handleLogin() {
     setLoading(true)
     await signIn(login, password)
-    queryClient.removeQueries(['gate-list'])
     setLoading(false)
   }
 

@@ -31,21 +31,21 @@ import {
   Container,
   ColorThemeContainer,
 } from './styles'
-import { AuthContext } from '../../hooks/auth'
+import { useAuth } from '../../hooks/auth'
 import { api } from '../../services/api'
 import { Gate } from '../../models/GateModel'
 import { GateCardShimmer } from '../../components/GateCardShimmer/GateCardShimmer'
 import { ThemeContext, ThemeType } from '../../hooks/theme'
 
 export function Home() {
-  const { login } = useContext(AuthContext)
+  const { authData, signOut } = useAuth()
   const navigation = useNavigation()
 
   const [date, setDate] = useState(0)
 
   const { data, isError, isLoading } = useQuery(
     ['list-gate'],
-    () => api.getGates(login.user, login.token),
+    () => api.getGates(authData.user, authData.token),
     {
       onSuccess: () => {
         setDate(Date.now())
@@ -55,7 +55,8 @@ export function Home() {
 
   const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
     useMutation(
-      (gate: Gate) => api.createSolicitation(gate, login.user, login.token),
+      (gate: Gate) =>
+        api.createSolicitation(gate, authData.user, authData.token),
       {
         onSuccess: () => {
           queryClient.invalidateQueries(['list-gate'])
@@ -107,11 +108,13 @@ export function Home() {
       <Header>
         <Logo source={require('../../assets/logo.png')} />
         <View>
-          <Title>{login.user.name.split(' ')[0]}</Title>
+          <Title>{authData.user.name.split(' ')[0]}</Title>
           <Subtitle
-            onPress={() =>
-              navigation.reset({ index: 1, routes: [{ name: 'Login' }] })
-            }
+            onPress={() => {
+              signOut()
+              // navigation.reset({ index: 1, routes: [{ name: 'Login' }] })
+              queryClient.removeQueries(['list-gate'])
+            }}
           >
             sign out
           </Subtitle>

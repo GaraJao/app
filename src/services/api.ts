@@ -3,10 +3,20 @@ import axios from 'axios'
 import { Gate } from '../models/GateModel'
 import { User } from '../models/UserModel'
 import { Solicitation } from '../models/SolicitationModel'
+import { AuthData } from '../hooks/auth'
 
 const axiosInstance = axios.create({
   baseURL: 'https://garajao-dev.vercel.app/api',
 })
+
+async function signIn(login: string, password: string): Promise<AuthData> {
+  const response = await axiosInstance.post<AuthData>(`/users/login`, {
+    login,
+    password,
+  })
+
+  return response.data
+}
 
 async function getGates(user: User, token: string): Promise<Gate[]> {
   const response = await axiosInstance.get<Gate[]>(`/gates/${user.id}/user`, {
@@ -58,7 +68,7 @@ async function deleteSolicitation(
 }
 
 export const api = {
-  axiosInstance,
+  signIn,
   getGates,
   getSolicitations,
   createSolicitation,

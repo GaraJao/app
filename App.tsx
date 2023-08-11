@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import { Routes } from './src/routes'
 import { ThemeProvider } from './src/hooks/theme'
+import { AuthProvider } from './src/hooks/auth'
+import { Router } from './src/routes/Router'
 
 export default function App() {
   const queryClient = new QueryClient()
@@ -9,7 +10,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <Routes />
+        <AuthProvider>
+          <Router />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )
