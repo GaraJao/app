@@ -112,7 +112,6 @@ export function Home() {
           <Subtitle
             onPress={() => {
               signOut()
-              // navigation.reset({ index: 1, routes: [{ name: 'Login' }] })
               queryClient.removeQueries(['list-gate'])
             }}
           >

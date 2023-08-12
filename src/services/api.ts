@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { BASE_URL } from '@env'
 
 import { Gate } from '../models/GateModel'
 import { User } from '../models/UserModel'
@@ -6,7 +7,7 @@ import { Solicitation } from '../models/SolicitationModel'
 import { AuthData } from '../hooks/auth'
 
 const axiosInstance = axios.create({
-  baseURL: 'https://garajao-dev.vercel.app/api',
+  baseURL: BASE_URL,
 })
 
 async function signIn(login: string, password: string): Promise<AuthData> {

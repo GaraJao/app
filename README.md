@@ -7,7 +7,7 @@
   <img alt='version' src='https://img.shields.io/badge/version-1.0-1C1E26?style=for-the-badge&labelColor=1C1E26&color=d58453&' />
 </p>
 
-![cover]()
+![cover](https://i.imgur.com/pQb9kTx.png)
 
 ## 💻 Project
 Application to connect and view the status of the gates of their homes. Consult the opening/closing history and virtually control the state of your gate.
