@@ -1,93 +1,215 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
-import { View, BackHandler, Alert } from 'react-native';
+import { useCallback, useContext, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  RefreshControl,
+  View,
+} from 'react-native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import { MaterialIcons } from '@expo/vector-icons'
+import { useTheme } from 'styled-components/native'
+import moment from 'moment'
 
-import { DateCard, State, StateCircle, ContainerState, City, Gate, CardBody, Body, Card, ContainerImage, CardImage, Header, Logo, Image, Title, Subtitle, Container } from './styles'
-import { useNavigation } from '@react-navigation/native';
-
-import { AuthContext } from '../../contexts/auth';
+import {
+  DateCard,
+  State,
+  StateCircle,
+  ContainerState,
+  City,
+  GateText,
+  CardBody,
+  Body,
+  Card,
+  ContainerImage,
+  CardImage,
+  Header,
+  Logo,
+  Title,
+  Subtitle,
+  Container,
+  ColorThemeContainer,
+} from './styles'
+import { useAuth } from '../../hooks/auth'
+import { api } from '../../services/api'
+import { Gate } from '../../models/GateModel'
+import { GateCardShimmer } from '../../components/GateCardShimmer/GateCardShimmer'
+import { ThemeContext, ThemeType } from '../../hooks/theme'
 
 export function Home() {
-    const { user, token } = useContext(AuthContext);
-    const navigation = useNavigation();
+  const { authData, signOut } = useAuth()
+  const navigation = useNavigation()
 
-    const [test, setTest] = useState(0);
+  const [date, setDate] = useState(0)
 
-    const backAction = () => {
-        if (navigation.isFocused()) {
-            Alert.alert("Attention", "Do you really want to exit the App?", [
-                {
-                    text: "Cancel",
-                    onPress: () => null,
-                    style: "cancel"
-                },
-                { text: "YES", onPress: () => BackHandler.exitApp() }
-            ]);
-            return true;
+  const { data, isError, isLoading } = useQuery(
+    ['list-gate'],
+    () => api.getGates(authData.user, authData.token),
+    {
+      onSuccess: () => {
+        setDate(Date.now())
+      },
+    },
+  )
+
+  const { isLoading: createSolicitationIsLoading, mutate: createSolicitation } =
+    useMutation(
+      (gate: Gate) =>
+        api.createSolicitation(gate, authData.user, authData.token),
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries(['list-gate'])
+          queryClient.invalidateQueries(['list-solicitation'])
+        },
+        onError: (error: any) =>
+          Alert.alert('Attention', error.response.data.message),
+      },
+    )
+
+  const queryClient = useQueryClient()
+  const [refreshing, setRefreshing] = useState(false)
+
+  const { toggleTheme, theme } = useContext(ThemeContext)
+  const isDarkMode = theme === ThemeType.dark
+  const { colors } = useTheme()
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await queryClient.invalidateQueries(['list-gate'])
+    setRefreshing(false)
+  }, [queryClient])
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.removeQueries(['list-solicitation'])
+      queryClient.invalidateQueries(['list-gate'])
+    }, [queryClient]),
+  )
+
+  const backAction = () => {
+    if (navigation.isFocused()) {
+      Alert.alert('Attention', 'Do you really want to exit the App?', [
+        {
+          text: 'Cancel',
+          onPress: () => null,
+          style: 'cancel',
+        },
+        { text: 'YES', onPress: () => BackHandler.exitApp() },
+      ])
+      return true
+    }
+  }
+
+  BackHandler.addEventListener('hardwareBackPress', backAction)
+
+  return (
+    <Container>
+      <Header>
+        <Logo source={require('../../assets/logo.png')} />
+        <View>
+          <Title>{authData.user.name.split(' ')[0]}</Title>
+          <Subtitle
+            onPress={() => {
+              signOut()
+              queryClient.removeQueries(['list-gate'])
+            }}
+          >
+            sign out
+          </Subtitle>
+        </View>
+        <ColorThemeContainer>
+          <MaterialIcons
+            onPress={() => toggleTheme()}
+            name={isDarkMode ? 'nightlight-round' : 'wb-sunny'}
+            size={37}
+            color={colors.primary}
+          />
+        </ColorThemeContainer>
+      </Header>
+      <Body
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
         }
-    };
-
-    const backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        backAction
-    );
-
-    let { data } = useQuery("gates", async () => {
-        const res = await fetch("https://garajao-dev.vercel.app/api/gates/" + user.user.id + "/user", {
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + token.token },
-        });
-        return res.json();
-    }, { refetchInterval: 1000 });
-
-    if (data) {
-        data.map((gate: any) => {
-            if (gate.open) {
-                gate.status = "OPENED"
-                gate.color = "#5CBE53";
-            } else {
-                gate.status = "CLOSED"
-                gate.color = "#C84D4D";
+      >
+        {isLoading &&
+          [...Array(6)].map((e, i) => (
+            <GateCardShimmer key={i}></GateCardShimmer>
+          ))}
+        {isError && <Subtitle>Erro</Subtitle>}
+        {data?.map((gate: Gate) => (
+          <Card
+            key={gate.id}
+            onPress={() =>
+              navigation.navigate('Solicitations', {
+                gateData: gate,
+                date,
+              })
             }
-            gate.date = new Date(gate.updated_at).toLocaleString("pt-br");
-
-            if (gate.id == "f96652a1-b288-47f2-ae7d-f67b96995f86")
-                gate.image = require("../../assets/gates/f96652a1-b288-47f2-ae7d-f67b96995f86.jpg");
-            else if (gate.id == "ace9f0ff-1b73-41a5-952e-3b5a3154b611")
-                gate.image = require("../../assets/gates/ace9f0ff-1b73-41a5-952e-3b5a3154b611.jpg");
-            else
-                gate.image = require("../../assets/logo.png");
-        });
-    } else
-        data = [];
-
-    return (
-        <Container>
-            <Header>
-                <Logo source={require('../../assets/logo.png')} />
-                <View>
-                    <Title>{user.user.name.split(" ")[0]}</Title>
-                    <Subtitle onPress={() => navigation.reset({ index: 1, routes: [{ name: 'Login' }] })}>sign out</Subtitle>
-                </View>
-            </Header>
-            <Body>
-                {data.map((gate: any) => (
-                    <Card onPress={() => navigation.navigate('Solicitations', { gate: gate })} key={gate.id}>
-                        <ContainerImage>
-                            <CardImage source={gate.image}></CardImage>
-                        </ContainerImage>
-                        <CardBody>
-                            <Gate numberOfLines={1}>{gate.name}</Gate>
-                            <City>{gate.city} • {gate.uf}</City>
-                            <ContainerState>
-                                <StateCircle style={{ backgroundColor: gate.color }} />
-                                <State>{gate.status}</State>
-                                <DateCard>{gate.date}</DateCard>
-                            </ContainerState>
-                        </CardBody>
-                    </Card>
-                ))}
-            </Body>
-        </Container>
-    );
+          >
+            <ContainerImage>
+              <CardImage
+                source={{
+                  uri: gate.image,
+                }}
+              ></CardImage>
+            </ContainerImage>
+            <CardBody>
+              <GateText numberOfLines={1}>{gate.name}</GateText>
+              <City>
+                {gate.city} • {gate.uf}
+              </City>
+              <ContainerState>
+                <StateCircle
+                  style={{
+                    backgroundColor:
+                      moment(date).diff(gate.consulted_at, 'seconds') < 30
+                        ? gate.open
+                          ? colors.open
+                          : colors.close
+                        : colors.offline,
+                  }}
+                />
+                <State>
+                  {moment(date).diff(gate.consulted_at, 'seconds') < 30
+                    ? gate.open
+                      ? 'OPEN'
+                      : 'CLOSED'
+                    : 'OFFLINE'}
+                </State>
+                <DateCard>
+                  {gate.solicitations &&
+                    moment(gate.solicitations.updated_at).fromNow()}
+                </DateCard>
+              </ContainerState>
+            </CardBody>
+            {moment(date).diff(gate.consulted_at, 'seconds') < 30 ? (
+              createSolicitationIsLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary}
+                  style={{ position: 'absolute', right: 15 }}
+                />
+              ) : (
+                <MaterialIcons
+                  style={{ position: 'absolute', right: 15 }}
+                  onPress={() => createSolicitation(gate)}
+                  name={'play-arrow'}
+                  size={37}
+                  color={colors.primary}
+                />
+              )
+            ) : (
+              ''
+            )}
+          </Card>
+        ))}
+      </Body>
+    </Container>
+  )
 }
