@@ -36,9 +36,10 @@ import { api } from '../../services/api'
 import { Gate } from '../../models/GateModel'
 import { GateCardShimmer } from '../../components/GateCardShimmer/GateCardShimmer'
 import { ThemeContext, ThemeType } from '../../hooks/theme'
+import 'moment/locale/pt-br'
 
 export function Home() {
-  const { authData, signOut } = useAuth()
+  const { authData, signOut, device } = useAuth()
   const navigation = useNavigation()
 
   const [date, setDate] = useState(0)
@@ -63,7 +64,7 @@ export function Home() {
           queryClient.invalidateQueries(['list-solicitation'])
         },
         onError: (error: any) =>
-          Alert.alert('Attention', error.response.data.message),
+          Alert.alert('Atenção', error.response.data.message),
       },
     )
 
@@ -89,13 +90,13 @@ export function Home() {
 
   const backAction = () => {
     if (navigation.isFocused()) {
-      Alert.alert('Attention', 'Do you really want to exit the App?', [
+      Alert.alert('Atenção', 'Você realmente deseja sair do aplicativo?', [
         {
-          text: 'Cancel',
+          text: 'Cancelar',
           onPress: () => null,
           style: 'cancel',
         },
-        { text: 'YES', onPress: () => BackHandler.exitApp() },
+        { text: 'Sim', onPress: () => BackHandler.exitApp() },
       ])
       return true
     }
@@ -111,11 +112,11 @@ export function Home() {
           <Title>{authData.user.name.split(' ')[0]}</Title>
           <Subtitle
             onPress={() => {
-              signOut()
+              signOut(device, authData)
               queryClient.removeQueries(['list-gate'])
             }}
           >
-            sign out
+            sair
           </Subtitle>
         </View>
         <ColorThemeContainer>
@@ -178,8 +179,8 @@ export function Home() {
                 <State>
                   {moment(date).diff(gate.consulted_at, 'seconds') < 30
                     ? gate.open
-                      ? 'OPEN'
-                      : 'CLOSED'
+                      ? 'ABERTO'
+                      : 'FECHADO'
                     : 'OFFLINE'}
                 </State>
                 <DateCard>

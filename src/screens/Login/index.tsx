@@ -18,7 +18,7 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { signIn } = useAuth()
+  const { signIn, device } = useAuth()
 
   const onChangeLoginHandler = (login: string) => {
     setLogin(login)
@@ -28,30 +28,30 @@ export function Login() {
     setPassword(password)
   }
 
-  async function handleLogin() {
+  async function handleSignIn() {
     setLoading(true)
-    await signIn(login, password)
+    await signIn(login, password, device)
     setLoading(false)
   }
 
   return (
     <Container>
       <Logo source={require('../../assets/logo.png')} />
-      <Title>Welcome,</Title>
+      <Title>Bem-vindo,</Title>
       <Subtitle>
-        log in with your credentials to access the security area
+        faça login com suas credenciais para acessar a área de segurança
       </Subtitle>
       <Input
         onChangeText={onChangeLoginHandler}
-        placeholder="Enter your username"
+        placeholder="Digite o seu login"
       />
       <Input
         onChangeText={onChangePasswordHandler}
-        placeholder="Enter your password"
+        placeholder="Digite a sua senha"
         secureTextEntry={true}
       />
-      <Button onPress={() => handleLogin()}>
-        {loading ? <Loading /> : <ButtonText>LOGIN</ButtonText>}
+      <Button onPress={() => handleSignIn()}>
+        {loading ? <Loading /> : <ButtonText>ENTRAR</ButtonText>}
       </Button>
       <Image source={require('../../assets/garajao.png')} alt="logo" />
     </Container>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "GaraJão",
     "slug": "garajao-app-v2",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "assets/icon.png",
     "splash": {
@@ -15,7 +15,8 @@
         "foregroundImage": "assets/adaptive-icon.png",
         "backgroundColor": "#d58453"
       },
-      "package": "com.bonadio.garajaoappv2"
+      "package": "com.bonadio.garajaoappv2",
+      "googleServicesFile": "./google-services.json"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -24,6 +25,16 @@
       "eas": {
         "projectId": "f30c38d9-b972-4bb7-af99-517fe6329c8c"
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "assets/notification.png",
+          "color": "#d58453",
+          "mode": "production"
+        }
+      ]
+    ]
   }
 }

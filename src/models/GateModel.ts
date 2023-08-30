@@ -6,6 +6,7 @@ export interface Gate {
   name: string
   open: boolean
   provisional_open: boolean
+  notified: boolean
   cep: string
   address: string
   complement: string
@@ -14,7 +15,7 @@ export interface Gate {
   uf: string
   image: string
 
-  solicitations: Solicitation
+  solicitations: Solicitation[]
   users: User[]
 
   consulted_at: Date

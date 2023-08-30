@@ -2,7 +2,7 @@ import styled from 'styled-components/native'
 
 export const Container = styled.View`
   padding: 0 23px;
-  padding-top: 70px;
+  padding-top: 60px;
   flex: 1;
   background-color: ${(props) => props.theme.colors.background};
 `
@@ -39,7 +39,7 @@ export const GateState = styled.View`
   align-items: center;
   height: 25px;
   padding: 3px 0;
-  width: 60px;
+  width: 70px;
   border-radius: 5px;
   margin-bottom: 10px;
 `
@@ -73,6 +73,7 @@ export const Body = styled.ScrollView`
 export const Card = styled.View`
   width: 100%;
   height: 80px;
+  min-height: 60px;
   /* border-radius: 20px;
     overflow: hidden; */
   flex-direction: row;

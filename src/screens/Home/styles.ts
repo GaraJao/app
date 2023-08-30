@@ -2,7 +2,7 @@ import styled from 'styled-components/native'
 
 export const Container = styled.View`
   padding: 0 23px;
-  padding-top: 70px;
+  padding-top: 60px;
   flex: 1;
   background-color: ${(props) => props.theme.colors.background};
 `
