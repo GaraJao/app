@@ -43,6 +43,7 @@ import { Message } from '../../models/MessageModel'
 import { Gate } from '../../models/GateModel'
 import { SolicitationCardShimmer } from '../../components/SolicitationCardShimmer/SolicitationCardShimmer'
 import { User } from '../../models/UserModel'
+import { Device } from '../../models/DeviceModel'
 
 export function Solicitations({ route }: any) {
   const { authData } = useAuth()
@@ -85,7 +86,7 @@ export function Solicitations({ route }: any) {
 
           const newSolicitation = {
             id: uuid.v4(),
-            message: { description: 'Loading...' } as Message,
+            message: { description: 'Carregando...' } as Message,
             user: { name: authData.user.name },
             updated_at: new Date(),
             valid: false,
@@ -94,7 +95,7 @@ export function Solicitations({ route }: any) {
           previousSolicitations.unshift(newSolicitation)
         },
         onError: (error: any) =>
-          Alert.alert('Attention', error.response.data.message),
+          Alert.alert('Atenção', error.response.data.message),
       },
     )
 
@@ -118,7 +119,7 @@ export function Solicitations({ route }: any) {
           setSelectedSolicitation(null)
         },
         onError: (error: any) =>
-          Alert.alert('Attention', error.response.data.message),
+          Alert.alert('Atenção', error.response.data.message),
       },
     )
 
@@ -167,7 +168,7 @@ export function Solicitations({ route }: any) {
                     padding: 20,
                   }}
                 >
-                  <Text>{menu ? 'HISTORY' : 'USERS'}</Text>
+                  <Text>{menu ? 'HISTÓRICO' : 'USUÁRIOS'}</Text>
                 </GateUsers>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => createSolicitation()}>
@@ -185,9 +186,9 @@ export function Solicitations({ route }: any) {
                     <ActivityIndicator color={colors.fontColorButton} />
                   ) : moment(date).diff(gate.consulted_at, 'seconds') < 30 ? (
                     gate.open ? (
-                      <Text>CLOSE</Text>
+                      <Text>FECHAR</Text>
                     ) : (
-                      <Text>OPEN</Text>
+                      <Text>ABRIR</Text>
                     )
                   ) : (
                     <Text>OFF</Text>
@@ -231,9 +232,17 @@ export function Solicitations({ route }: any) {
                   {user.name} ({user.role.name})
                 </GateText>
                 <DateCard style={{ marginTop: 4 }}>
-                  Created at:{' '}
-                  {new Date(user.created_at).toLocaleString('pt-br')}
+                  Último login:{' '}
+                  {user.last_login
+                    ? new Date(user.last_login).toLocaleString('pt-br')
+                    : 'Nunca'}
                 </DateCard>
+                {user.devices.map((device: Device) => (
+                  <DateCard
+                    style={{ opacity: device.deleted_at ? 0.4 : 1 }}
+                    key={device.id}
+                  >{`${device.model} - ${device.name}`}</DateCard>
+                ))}
               </CardBody>
             </Card>
           ))}
@@ -266,8 +275,8 @@ export function Solicitations({ route }: any) {
                 <DateCard>{moment(solicitation.updated_at).fromNow()}</DateCard>
                 <City numberOfLines={1}>
                   {solicitation.user
-                    ? `User: ${solicitation.user.name}`
-                    : `Code: ${solicitation.code}`}
+                    ? `Usuário: ${solicitation.user.name}`
+                    : `Código: ${solicitation.code}`}
                 </City>
               </CardBody>
               {!solicitation.valid ? (

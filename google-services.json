@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "352969100702",
+    "project_id": "garajao-4629f",
+    "storage_bucket": "garajao-4629f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:352969100702:android:fc15edd14a3fd38af1da8f",
+        "android_client_info": {
+          "package_name": "com.bonadio.garajaoappv2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "352969100702-6jkq0dcgel64i2vpdmd5s9ul457m1eip.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdH9KzK_cbnGYrChu7FNxVZyweGdPTiLw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "352969100702-6jkq0dcgel64i2vpdmd5s9ul457m1eip.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
